@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LangGraph AI Agent System</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div id="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-container">
+                <h1><i class="fas fa-robot"></i> LangGraph AI System</h1>
+                <div class="user-info" id="userInfo" style="display: none;">
+                    <span id="welcomeMessage">Welcome, User!</span>
+                    <button id="logoutBtn" class="btn btn-outline">Logout</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Login Form -->
+        <div id="loginContainer" class="auth-container">
+            <div class="auth-card">
+                <h2><i class="fas fa-sign-in-alt"></i> Sign In</h2>
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="loginUsername">Username</label>
+                        <input type="text" id="loginUsername" name="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPassword">Password</label>
+                        <input type="password" id="loginPassword" name="password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Sign In</button>
+                </form>
+                <p class="auth-switch">Don't have an account? <a href="#" id="showRegister">Register here</a></p>
+            </div>
+        </div>
+
+        <!-- Register Form -->
+        <div id="registerContainer" class="auth-container" style="display: none;">
+            <div class="auth-card">
+                <h2><i class="fas fa-user-plus"></i> Register</h2>
+                <form id="registerForm">
+                    <div class="form-group">
+                        <label for="registerUsername">Username</label>
+                        <input type="text" id="registerUsername" name="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerEmail">Email</label>
+                        <input type="email" id="registerEmail" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerPassword">Password</label>
+                        <input type="password" id="registerPassword" name="password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Register</button>
+                </form>
+                <p class="auth-switch">Already have an account? <a href="#" id="showLogin">Sign in here</a></p>
+            </div>
+        </div>
+
+        <!-- Main Application -->
+        <div id="mainContainer" class="main-container" style="display: none;">
+            <div class="sidebar">
+                <div class="sidebar-section">
+                    <h3><i class="fas fa-user-circle"></i> User Profile</h3>
+                    <div id="userProfile" class="user-profile">
+                        <p class="loading">Please login to see profile...</p>
+                    </div>
+                </div>
+                <div class="sidebar-section">
+                    <h3><i class="fas fa-history"></i> Query History</h3>
+                    <div id="queryHistory" class="query-history">
+                        <p class="loading">Login to see query history...</p>
+                    </div>
+                </div>
+                <div class="sidebar-section">
+                    <h3><i class="fas fa-chart-line"></i> Statistics</h3>
+                    <div id="userStats" class="user-stats">
+                        <p class="loading">Login to see statistics...</p>
+                    </div>
+                </div>
+                <div class="sidebar-section">
+                    <h3><i class="fas fa-cogs"></i> Active Agents</h3>
+                    <div id="activeAgents" class="active-agents">
+                        <p class="loading">Loading agents...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chat-container">
+                <div class="chat-header">
+                    <h2><i class="fas fa-comments"></i> Chat with AI Agents</h2>
+                    <div class="connection-status">
+                        <span id="ollamaStatus" class="status-indicator">
+                            <i class="fas fa-circle"></i> Ollama: <span>Checking...</span>
+                        </span>
+                    </div>
+                </div>
+
+                <div id="chatMessages" class="chat-messages">
+                    <div class="message system-message">
+                        <div class="message-content">
+                            <i class="fas fa-info-circle"></i>
+                            Welcome! Ask questions about scenic locations, forests, water bodies, or search your conversation history.
+                            The system will intelligently route your query to the most appropriate agent(s).
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chat-input-container">
+                    <form id="chatForm" class="chat-form">
+                        <input type="text" id="chatInput" placeholder="Ask about scenic locations, forests, water bodies, or search history..." disabled>
+                        <button type="submit" id="sendBtn" class="btn btn-primary" disabled>
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </form>
+                    <div class="quick-actions">
+                        <button class="quick-btn" data-query="Find scenic mountain locations">🏔️ Scenic Mountains</button>
+                        <button class="quick-btn" data-query="Search my conversation history">🔍 Search History</button>
+                        <button class="quick-btn" data-query="Tell me about forest ecosystems">🌲 Forest Info</button>
+                        <button class="quick-btn" data-query="Water bodies near scenic areas">💧 Water & Scenery</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Overlay -->
+        <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+            <div class="loading-spinner">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Processing your request...</p>
+            </div>
+        </div>
+
+        <!-- Toast Notifications -->
+        <div id="toastContainer" class="toast-container"></div>
+    </div>
+
+        <script src="/static/js/auth_app.js"></script>
+</body>
+</html>
