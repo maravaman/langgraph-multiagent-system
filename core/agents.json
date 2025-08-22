@@ -26,27 +26,17 @@
       "description": "Performs similarity search in user history and memory",
       "capabilities": ["memory_search", "similarity_matching", "history_analysis"],
       "priority": 3
-    },
-    {
-      "id": "TemplateAgent",
-      "name": "Template Base Agent",
-      "module": "agents.template_agent",
-      "description": "Template agent for general queries and fallback responses",
-      "capabilities": ["general_query", "fallback_response", "template_processing"],
-      "priority": 4
     }
   ],
   "edges": {
     "ScenicLocationFinderAgent": ["ForestAnalyzerAgent", "SearchAgent"],
     "ForestAnalyzerAgent": ["SearchAgent"],
-    "SearchAgent": [],
-    "TemplateAgent": ["SearchAgent"]
+    "SearchAgent": []
   },
   "edge_conditions": {
     "ScenicLocationFinderAgent->ForestAnalyzerAgent": "contains forest-related keywords",
     "ScenicLocationFinderAgent->SearchAgent": "needs historical context for scenic locations",
-    "ForestAnalyzerAgent->SearchAgent": "needs historical context for forest analysis",
-    "TemplateAgent->SearchAgent": "needs to search previous interactions"
+    "ForestAnalyzerAgent->SearchAgent": "needs historical context for forest analysis"
   },
   "memory_settings": {
     "stm_expiry_seconds": 3600,

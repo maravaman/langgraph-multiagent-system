@@ -202,13 +202,13 @@ class ChatInput(BaseModel):
 async def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
-# ✅ Updated run_graph endpoint with authentication support
+# ✅ Updated run_graph endpoint with LangGraph Multiagent System
 @app.post("/run_graph")
 async def run_graph_authenticated(payload: GraphInput, current_user: dict = Depends(get_current_user) if get_current_user else None):
-    """Run LangGraph with user authentication and activity tracking"""
+    """Run LangGraph Multiagent System with Weather and Dining agents"""
     try:
-        # Import the framework
-        from core.langgraph_framework import langgraph_framework
+        # Import the new multiagent system
+        from core.langgraph_multiagent_system import langgraph_multiagent_system
         
         # Use authenticated user ID if available, otherwise generate temporary ID
         if current_user:
@@ -220,8 +220,8 @@ async def run_graph_authenticated(payload: GraphInput, current_user: dict = Depe
         
         start_time = datetime.now()
         
-        # Process request through LangGraph framework
-        result = langgraph_framework.process_request(
+        # Process request through LangGraph Multiagent System
+        result = langgraph_multiagent_system.process_request(
             user=username,
             user_id=user_id,
             question=payload.question
@@ -249,17 +249,17 @@ async def run_graph_authenticated(payload: GraphInput, current_user: dict = Depe
         return result
         
     except Exception as e:
-        logger.error(f"Graph execution error: {e}")
-        raise HTTPException(status_code=500, detail=f"Graph execution failed: {str(e)}")
+        logger.error(f"Multiagent system execution error: {e}")
+        raise HTTPException(status_code=500, detail=f"Multiagent system execution failed: {str(e)}")
 
 # ✅ Legacy run_graph endpoint without authentication (for backward compatibility)
 @app.post("/run_graph_legacy")
 async def run_graph_legacy(payload: GraphInput):
-    """Legacy run_graph endpoint without authentication"""
+    """Legacy run_graph endpoint using new multiagent system"""
     try:
-        from core.langgraph_framework import langgraph_framework
+        from core.langgraph_multiagent_system import langgraph_multiagent_system
         
-        result = langgraph_framework.process_request(
+        result = langgraph_multiagent_system.process_request(
             user=payload.user,
             user_id=int(datetime.now().timestamp()),
             question=payload.question
@@ -268,8 +268,8 @@ async def run_graph_legacy(payload: GraphInput):
         return result
         
     except Exception as e:
-        logger.error(f"Graph execution error: {e}")
-        raise HTTPException(status_code=500, detail=f"Graph execution failed: {str(e)}")
+        logger.error(f"Multiagent system execution error: {e}")
+        raise HTTPException(status_code=500, detail=f"Multiagent system execution failed: {str(e)}")
 # async def ai_chat(
 #     input_data: ChatInput,
 #     current_user: dict = Depends(get_current_user)

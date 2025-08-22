@@ -217,6 +217,50 @@ class AgentPromptManager:
                 - Environmental factors and impacts"""
             },
             
+            "WeatherAgent": {
+                "system": """You are WeatherAgent, a specialized weather analysis assistant. Provide accurate, helpful weather information including:
+                - Current conditions and forecasts
+                - Climate analysis and seasonal patterns
+                - Weather-related planning advice
+                - Impact on outdoor activities
+                Be practical and actionable in your responses.""",
+                "template": """Weather Query: {query}
+                
+                Context: {context}
+                
+                Please provide comprehensive weather information including:
+                1. Current conditions or forecast as appropriate
+                2. Temperature information
+                3. Precipitation chances if relevant
+                4. Wind conditions
+                5. Any weather advisories or recommendations
+                6. Impact on activities if mentioned
+                
+                Be specific, practical, and helpful."""
+            },
+            
+            "DiningAgent": {
+                "system": """You are DiningAgent, a culinary and restaurant specialist. Provide excellent dining recommendations including:
+                - Restaurant suggestions and cuisine types
+                - Local food culture and specialties
+                - Dining experiences and ambiance
+                - Food and weather/location considerations
+                Be descriptive and helpful for dining decisions.""",
+                "template": """Dining Query: {query}
+                
+                Context: {context}
+                
+                Please provide comprehensive dining recommendations including:
+                1. Restaurant suggestions or cuisine types
+                2. Location considerations and accessibility
+                3. Ambiance and dining experience
+                4. Menu highlights or signature dishes
+                5. Price range and value considerations
+                6. Special dietary accommodations if mentioned
+                
+                Be specific, enticing, and practical in your recommendations."""
+            },
+            
             "OrchestratorAgent": {
                 "system": """You are an orchestrator agent that routes queries to appropriate specialist agents.
                 Analyze the query and determine which agents should handle it.""",
@@ -227,26 +271,78 @@ class AgentPromptManager:
                 - ScenicLocationFinder: Finding beautiful locations
                 - ForestAnalyzer: Forest ecology and analysis
                 - WaterBodyAnalyzer: Water bodies and hydrology
+                - WeatherAgent: Weather forecasts and climate analysis
+                - DiningAgent: Restaurant recommendations and cuisine analysis
                 
                 Determine which agent(s) should handle this query and why.
                 Return routing decision as JSON."""
             }
         }
     
-    def get_prompt(self, agent_name: str, query: str, context: str = "") -> Dict[str, str]:
-        """Get formatted prompt for an agent"""
-        if agent_name not in self.agent_prompts:
-            agent_name = "ScenicLocationFinder"  # Default fallback
-        
-        agent_config = self.agent_prompts[agent_name]
-        formatted_prompt = agent_config["template"].format(
-            query=query, 
-            context=context or "No previous context available"
-        )
-        
+    def get_prompt(self, agent_name: str, query: str, context: str = "") -> Optional[Dict[str, str]]:
+        """Get formatted prompt for an agent with comprehensive null safety"""
+        try:
+            # Validate inputs
+            if not agent_name or not isinstance(agent_name, str):
+                logger.warning(f"Invalid agent_name: {agent_name}, using default")
+                agent_name = "ScenicLocationFinder"
+            
+            if not query or not isinstance(query, str):
+                logger.warning(f"Invalid query: {query}, using default")
+                query = "General query"
+            
+            if context is None:
+                context = ""
+            
+            # Check if agent exists, fallback to default
+            if agent_name not in self.agent_prompts:
+                logger.warning(f"Agent {agent_name} not found, using ScenicLocationFinder")
+                agent_name = "ScenicLocationFinder"
+            
+            agent_config = self.agent_prompts.get(agent_name)
+            if not agent_config or not isinstance(agent_config, dict):
+                logger.error(f"Invalid agent config for {agent_name}")
+                return self._get_fallback_prompt(query, context)
+            
+            # Safely get template and system prompt
+            template = agent_config.get("template", "Query: {query}\nContext: {context}")
+            system_prompt = agent_config.get("system", "You are a helpful AI assistant.")
+            
+            if not template or not system_prompt:
+                logger.error(f"Missing template or system prompt for {agent_name}")
+                return self._get_fallback_prompt(query, context)
+            
+            # Format prompt safely
+            try:
+                formatted_prompt = template.format(
+                    query=query or "General query", 
+                    context=context or "No previous context available"
+                )
+            except KeyError as e:
+                logger.error(f"Template formatting error for {agent_name}: {e}")
+                formatted_prompt = f"Query: {query}\nContext: {context or 'No context'}"
+            
+            result = {
+                "system": system_prompt,
+                "prompt": formatted_prompt
+            }
+            
+            # Final validation
+            if not result.get("system") or not result.get("prompt"):
+                logger.error(f"Invalid result structure for {agent_name}")
+                return self._get_fallback_prompt(query, context)
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Error in get_prompt for {agent_name}: {e}")
+            return self._get_fallback_prompt(query, context)
+    
+    def _get_fallback_prompt(self, query: str, context: str) -> Dict[str, str]:
+        """Get fallback prompt when normal prompt generation fails"""
         return {
-            "system": agent_config["system"],
-            "prompt": formatted_prompt
+            "system": "You are a helpful AI assistant. Provide accurate and helpful responses.",
+            "prompt": f"Please respond to this query: {query or 'General query'}\n\nContext: {context or 'No context available'}"
         }
 
 # Global instances

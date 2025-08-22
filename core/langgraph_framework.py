@@ -105,57 +105,150 @@ class LangGraphFramework:
         return builder.compile()
     
     def _execute_agent_flow(self, state: GraphState) -> GraphState:
-        """Execute the agent flow based on edge map and routing logic"""
+        """Execute fully democratic multi-agent flow with equal preferences"""
         question = state.get("question", "")
-        question_lower = question.lower()
         
-        # Determine which agent to execute based on keywords
-        selected_agent = self.entry_point
+        # Get all relevant agents with equal preference (no hardcoding)
+        relevant_agents = self._identify_relevant_agents(question)
         
-        # Simple keyword-based routing
-        if any(word in question_lower for word in ["water", "lake", "river", "ocean", "sea"]):
-            if "WaterBodyAnalyzer" in self.loaded_agents:
-                selected_agent = "WaterBodyAnalyzer"
-        elif any(word in question_lower for word in ["forest", "tree", "wood", "jungle"]):
-            if "ForestAnalyzer" in self.loaded_agents:
-                selected_agent = "ForestAnalyzer"
-        elif any(word in question_lower for word in ["history", "previous", "remember", "before"]):
-            if "SearchAgent" in self.loaded_agents:
-                selected_agent = "SearchAgent"
+        if not relevant_agents:
+            # Fallback to entry point if no agents match
+            relevant_agents = [self.entry_point] if self.entry_point in self.loaded_agents else []
         
-        # Execute the selected agent
-        if selected_agent in self.loaded_agents:
-            agent = self.loaded_agents[selected_agent]
-            result_state = agent.execute(state)
-            
-            # Follow edge map for potential additional agents
-            edges_traversed = result_state.get("edges_traversed", [])
-            
-            # Check if we should execute additional agents based on edge map
-            possible_next_agents = self.edge_map.get(selected_agent, [])
-            for next_agent_id in possible_next_agents:
-                if next_agent_id in self.loaded_agents and next_agent_id not in edges_traversed:
-                    # Execute next agent and combine responses
-                    next_agent = self.loaded_agents[next_agent_id]
-                    next_state = next_agent.execute(result_state)
-                    
-                    # Combine responses
-                    current_response = result_state.get("response", "")
-                    next_response = next_state.get("response", "")
-                    combined_response = f"{current_response}\n\n[Additional Analysis from {next_agent_id}]:\n{next_response}"
-                    
-                    result_state["response"] = combined_response
-                    result_state["edges_traversed"] = next_state.get("edges_traversed", [])
-                    break  # Execute only one additional agent for now
-            
-            return result_state
-        else:
-            # Fallback if agent not found
+        if not relevant_agents:
+            # Final fallback
             updated_state = state.copy()
             updated_state["current_agent"] = "ErrorHandler"
-            updated_state["response"] = f"Selected agent {selected_agent} not available"
+            updated_state["response"] = "No agents available to process request"
             updated_state["edges_traversed"] = ["ErrorHandler"]
             return updated_state
+        
+        # Execute ALL relevant agents with equal preference
+        agent_responses = []
+        all_edges_traversed = []
+        primary_agent = relevant_agents[0]  # For backward compatibility
+        
+        for agent_id in relevant_agents:
+            if agent_id in self.loaded_agents:
+                try:
+                    agent = self.loaded_agents[agent_id]
+                    agent_state = agent.execute(state)
+                    
+                    response = agent_state.get("response", "")
+                    if response.strip():  # Only include non-empty responses
+                        agent_responses.append({
+                            'agent_id': agent_id,
+                            'response': response,
+                            'edges_traversed': agent_state.get("edges_traversed", [])
+                        })
+                        all_edges_traversed.extend(agent_state.get("edges_traversed", []))
+                    
+                except Exception as e:
+                    logger.warning(f"⚠️ Agent {agent_id} execution failed: {e}")
+                    continue
+        
+        # Combine all agent responses democratically (equal treatment)
+        combined_response = self._combine_equal_agent_responses(agent_responses)
+        
+        # Return combined state
+        updated_state = state.copy()
+        updated_state["current_agent"] = primary_agent  # For API compatibility
+        updated_state["response"] = combined_response
+        updated_state["edges_traversed"] = list(set(all_edges_traversed))  # Remove duplicates
+        
+        return updated_state
+    
+    def _identify_relevant_agents(self, question: str) -> List[str]:
+        """Dynamically identify ALL relevant agents with NO hardcodes - fully democratic"""
+        question_lower = question.lower()
+        relevant_agents = []
+        
+        # Completely dynamic agent matching - NO hardcoded capabilities!
+        # Extract capabilities directly from agents.json configuration
+        agent_scores = {}
+        
+        for agent_id, config in self.agents_config.items():
+            if agent_id not in self.loaded_agents:
+                continue
+                
+            score = 0
+            keywords_matched = []
+            
+            # Use agent capabilities from configuration
+            capabilities = config.get('capabilities', [])
+            description = config.get('description', '')
+            
+            # Dynamic keyword extraction from agent capabilities and description
+            all_keywords = capabilities + description.lower().split()
+            
+            # Count matches in query (completely dynamic)
+            for keyword in all_keywords:
+                keyword_clean = keyword.lower().strip('[](),.')
+                if keyword_clean in question_lower and len(keyword_clean) > 2:
+                    score += 1
+                    if keyword_clean not in keywords_matched:
+                        keywords_matched.append(keyword_clean)
+            
+            # Add semantic relevance based on common query patterns (no hardcodes)
+            semantic_words = ["where", "what", "how", "when", "help", "find", "search", "tell", "show"]
+            for word in semantic_words:
+                if word in question_lower:
+                    score += 0.3  # Lower weight for semantic matches
+            
+            if score > 0:
+                agent_scores[agent_id] = {
+                    'score': score,
+                    'keywords_matched': keywords_matched,
+                    'description': description
+                }
+        
+        # Select ALL agents with positive scores (democratic - no artificial limits)
+        if agent_scores:
+            # Sort by score (highest first) but include ALL with positive scores
+            sorted_agents = sorted(agent_scores.items(), key=lambda x: x[1]['score'], reverse=True)
+            relevant_agents = [agent_id for agent_id, info in sorted_agents]
+            
+            logger.info(f"🎯 Democratic agent selection for query '{question}':")
+            for agent_id, info in sorted_agents:
+                logger.info(f"   • {agent_id}: score={info['score']}, keywords={info['keywords_matched']}")
+        else:
+            logger.info(f"🔍 No specific agents matched query '{question}', using fallback")
+        
+        return relevant_agents
+    
+    def _combine_equal_agent_responses(self, agent_responses: List[Dict[str, Any]]) -> str:
+        """Combine responses from multiple agents with equal treatment (democratic synthesis)"""
+        if not agent_responses:
+            return "No responses generated from agents."
+        
+        if len(agent_responses) == 1:
+            # Single agent response - return as-is for backward compatibility
+            return agent_responses[0]['response']
+        
+        # Multiple agent responses - create democratic synthesis
+        combined_parts = []
+        combined_parts.append("🤖 **Multi-Agent Analysis** (Democratic Response)\n")
+        
+        # Add all agent perspectives with equal prominence
+        for i, agent_resp in enumerate(agent_responses, 1):
+            agent_id = agent_resp['agent_id']
+            response = agent_resp['response'].strip()
+            
+            if response:
+                # Clean agent ID for display
+                display_name = agent_id.replace('Analyzer', '').replace('Agent', '').replace('Finder', '')
+                combined_parts.append(f"**{display_name} Analysis:**")
+                combined_parts.append(response)
+                
+                if i < len(agent_responses):  # Add separator except for last item
+                    combined_parts.append("")
+        
+        # Add synthesis footer
+        agent_names = [resp['agent_id'].replace('Analyzer', '').replace('Agent', '').replace('Finder', '') 
+                      for resp in agent_responses]
+        combined_parts.append(f"\n*Combined insights from {len(agent_responses)} agents: {', '.join(agent_names)}*")
+        
+        return "\n".join(combined_parts)
     
     def _should_continue(self, state: GraphState) -> str:
         """Determine next agent based on state and edge map"""
