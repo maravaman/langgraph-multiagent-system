@@ -1,19 +1,22 @@
-# 🤖 LangGraph Multi-Agent AI System
+# 🚀 LangGraph Multi-Agent AI System v2.0
 
 [![Python Version](https://img.shields.io/badge/python-3.13%2B-blue.svg)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.116.1-green.svg)](https://fastapi.tiangolo.com)
+[![LangGraph](https://img.shields.io/badge/LangGraph-Latest-orange.svg)](https://langchain-ai.github.io/langgraph/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Status](https://img.shields.io/badge/status-Production%20Ready-brightgreen.svg)]()
+[![Test Coverage](https://img.shields.io/badge/coverage-85%25+-green.svg)]()
 
-A sophisticated multi-agent AI system built with LangGraph, FastAPI, and Ollama. Features intelligent query routing, persistent memory management, and a professional web interface for seamless human-AI interaction.
+An advanced **LangGraph-powered multi-agent AI system** featuring intelligent conditional routing, state management, agent collaboration, and comprehensive memory integration. Built for production with robust error handling, authentication, and a modern web interface.
 
 ## 🌟 Features
 
-### 🧠 **Intelligent Multi-Agent System**
-- **4 Specialized Agents**: ScenicLocationFinder, ForestAnalyzer, WaterBodyAnalyzer, SearchAgent
-- **Smart Query Routing**: Automatically routes queries to the most appropriate agent
-- **Agent Chaining**: Multi-agent collaboration for comprehensive responses
-- **LangGraph Framework**: State-of-the-art agent orchestration
+### 🧠 **Advanced LangGraph Multi-Agent System v2.0**
+- **5 Specialized Agents**: WeatherAgent, DiningAgent, ScenicLocationFinder, ForestAnalyzer, SearchAgent
+- **Intelligent Conditional Routing**: Advanced LangGraph-based query analysis and routing
+- **Multi-Agent Collaboration**: Agents share context and collaborate for comprehensive responses
+- **State Management**: Robust state tracking across agent interactions
+- **Null Safety & Error Handling**: Production-ready error handling and failover mechanisms
 
 ### 🔐 **Secure Authentication System**
 - **JWT Token Authentication**: Secure session management
@@ -336,33 +339,39 @@ curl -X POST "http://localhost:8000/run_graph_legacy" \
 | GET | `/memory/ltm/{user_id}/{agent_id}` | Get long-term memory | No |
 | GET | `/search_vector` | Vector similarity search | No |
 
-## 🤖 Agent System
+## 🤖 Agent System v2.0
 
 ### Available Agents
 
-#### 1. ScenicLocationFinderAgent
+#### 1. WeatherAgent 🌦️
+- **Purpose**: Provides comprehensive weather information and forecasts
+- **Capabilities**: Current conditions, weather forecasts, climate analysis, weather-related planning
+- **Keywords**: weather, temperature, rain, sun, climate, forecast, humidity, wind, storm, snow
+- **Example Query**: "What's the weather like in Delhi today?"
+
+#### 2. DiningAgent 🍽️
+- **Purpose**: Restaurant recommendations and culinary insights
+- **Capabilities**: Restaurant suggestions, cuisine analysis, dining experiences, food culture
+- **Keywords**: restaurant, food, cuisine, dining, eat, meal, chef, menu, cooking, recipe
+- **Example Query**: "Best restaurants in Mumbai for Italian food"
+
+#### 3. ScenicLocationFinderAgent 🏔️
 - **Purpose**: Find beautiful scenic locations and tourist destinations
-- **Capabilities**: Location recommendations, travel planning, photography tips
-- **Keywords**: scenic, mountain, landscape, beautiful, view, tourist, travel, photography
-- **Example Query**: "Find scenic mountain locations for photography"
+- **Capabilities**: Location recommendations, travel planning, photography spots, tourism advice
+- **Keywords**: scenic, beautiful, location, tourist, destination, view, landscape, mountain
+- **Example Query**: "Beautiful scenic places near Goa"
 
-#### 2. ForestAnalyzerAgent  
+#### 4. ForestAnalyzerAgent 🌲
 - **Purpose**: Forest ecosystem analysis and conservation
-- **Capabilities**: Biodiversity assessment, conservation advice, wildlife identification
-- **Keywords**: forest, tree, woodland, ecosystem, biodiversity, conservation, wildlife
-- **Example Query**: "Tell me about forest conservation practices"
+- **Capabilities**: Forest ecology, biodiversity analysis, conservation advice, wildlife information
+- **Keywords**: forest, tree, wildlife, ecosystem, conservation, nature, biodiversity
+- **Example Query**: "Tell me about the Western Ghats ecosystem"
 
-#### 3. WaterBodyAnalyzer
-- **Purpose**: Water body and aquatic ecosystem analysis
-- **Capabilities**: Water quality assessment, marine biology, coastal analysis
-- **Keywords**: water, lake, river, ocean, sea, aquatic, marine, coastal
-- **Example Query**: "Find the best lakes for kayaking"
-
-#### 4. SearchAgent
+#### 5. SearchAgent 🔍
 - **Purpose**: Memory and conversation history search
-- **Capabilities**: Semantic search, pattern recognition, historical insights
-- **Keywords**: search, history, previous, remember, find, similar, past
-- **Example Query**: "Search my previous conversations about mountains"
+- **Capabilities**: Similarity search, pattern recognition, history analysis, contextual insights
+- **Keywords**: search, history, remember, previous, similar, past, recall
+- **Example Query**: "Find previous conversations about travel"
 
 ### Agent Architecture
 
@@ -481,14 +490,20 @@ class YourAgent(BaseAgent):
 
 ### Run All Tests
 ```bash
-# Comprehensive system test
-python test_multiagent.py
+# Comprehensive framework test
+python test_framework.py
 
-# Web interface test
-python test_web_interface.py
+# Multi-agent system test
+python test_multiagent_system.py
 
-# Final system verification
-python final_system_test.py
+# Null safety and error handling test
+python test_null_safety_fixes.py
+
+# Authentication interface test
+python user_auth_interface.py
+
+# Simple test
+python simple_test.py
 ```
 
 ### Test Individual Components
@@ -657,15 +672,17 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **MySQL**: Relational database management system
 - **Sentence Transformers**: State-of-the-art text embeddings
 
-## 📊 Project Stats
+## 📈 Project Stats
 
-- **Lines of Code**: ~8,000+
+- **Lines of Code**: ~10,000+
 - **Test Coverage**: 85%+
-- **Documentation**: Comprehensive
-- **Agents**: 4 specialized agents
+- **Documentation**: Comprehensive + System Ready Guide
+- **Agents**: 5 specialized agents (v2.0)
 - **API Endpoints**: 15+ endpoints
-- **Features**: 20+ key features
-- **Performance**: <100ms for simple queries
+- **Features**: 25+ key features
+- **Performance**: <2s for complex multi-agent queries
+- **Framework**: LangGraph v2.0 with conditional routing
+- **Architecture**: Production-ready multi-agent system
 
 ---
 
