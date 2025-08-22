@@ -92,7 +92,7 @@ ollama serve
 
 ### 5. Initialize Database
 ```bash
-python fix_database_schema.py
+python upgrade_database_schema.py
 ```
 
 ### 6. Run the Application
@@ -114,8 +114,32 @@ Open your browser to: **http://localhost:8000**
 ### Dependencies Installation
 
 #### 1. Python Dependencies
+The system requires several key Python packages:
+
 ```bash
+# Install all dependencies
 pip install -r requirements.txt
+
+# Or install core dependencies individually:
+pip install fastapi>=0.104.0 uvicorn[standard]>=0.24.0
+pip install langgraph>=0.2.0 langchain>=0.3.0 langchain-community>=0.3.0
+pip install sentence-transformers>=2.2.0 faiss-cpu>=1.7.0
+pip install redis>=5.0.0 mysql-connector-python>=8.0.0
+pip install passlib[bcrypt]>=1.7.4 python-jose[cryptography]>=3.3.0
+pip install pydantic>=2.5.0 python-dotenv>=1.0.0
+```
+
+**Core Dependencies:**
+- **Web Framework**: FastAPI 0.104.0+, Uvicorn with standard extras
+- **LangGraph/LangChain**: Latest compatible versions (0.2.0+ and 0.3.0+)
+- **Vector Store**: Sentence Transformers 2.2.0+, FAISS CPU 1.7.0+
+- **Memory Systems**: Redis 5.0.0+, MySQL Connector 8.0.0+
+- **Authentication**: Passlib with bcrypt, Python JOSE with cryptography
+- **Utilities**: Pydantic 2.5.0+, Python dotenv 1.0.0+, NumPy 1.24.0+
+
+**Optional Testing Dependencies:**
+```bash
+pip install pytest pytest-asyncio coverage pytest-cov
 ```
 
 #### 2. Redis Installation
@@ -173,7 +197,14 @@ Create a `.env` file in the project root:
 APP_HOST=localhost
 APP_PORT=8000
 DEBUG=False
+APP_TITLE=LangGraph Multi-Agent System
+APP_DESCRIPTION=Enhanced multi-agent AI system with UI display and JSON storage
+APP_VERSION=2.0.0-multiagent
 SECRET_KEY=your-super-secret-key-change-in-production
+
+# Security Settings
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=480
 
 # Database Configuration
 MYSQL_HOST=localhost
@@ -181,22 +212,35 @@ MYSQL_USER=root
 MYSQL_PASSWORD=your-mysql-password
 MYSQL_DATABASE=langgraph_ai_system
 MYSQL_PORT=3306
+MYSQL_CONNECT_TIMEOUT=10
+MYSQL_CHARSET=utf8mb4
 
 # Redis Configuration
 REDIS_HOST=localhost
 REDIS_PORT=6379
 REDIS_DB=0
+REDIS_SOCKET_TIMEOUT=5
+REDIS_SOCKET_CONNECT_TIMEOUT=5
 
 # Ollama Configuration
 OLLAMA_BASE_URL=http://localhost:11434
 OLLAMA_DEFAULT_MODEL=llama3:latest
 OLLAMA_TIMEOUT=30
-OLLAMA_MAX_TOKENS=2000
+OLLAMA_MAX_TOKENS=1000
 OLLAMA_TEMPERATURE=0.7
 
-# Authentication
-ACCESS_TOKEN_EXPIRE_MINUTES=480
-ALGORITHM=HS256
+# Agent Configuration
+AGENT_MAX_RESPONSE_LENGTH=5000
+AGENT_PROCESSING_TIMEOUT=60
+MULTI_AGENT_MAX_AGENTS=3
+
+# UI Configuration
+STATIC_DIR=static
+TEMPLATES_DIR=templates
+
+# Logging Configuration
+LOG_LEVEL=INFO
+# LOG_FILE=app.log  # Uncomment to enable file logging
 ```
 
 ### Agent Configuration
@@ -210,18 +254,82 @@ agent_registry:
   minimum_confidence_threshold: 0.3
   max_agents_per_query: 5
 
-# Memory Management
+# Memory Management Configuration
 memory:
   stm_default_expiry_hours: 1
   ltm_retention_days: 365
   vector_search_limit: 10
+  cross_agent_search_enabled: true
 
-# Orchestration
+# Orchestration Configuration
 orchestration:
   default_strategy: "auto_select_best_agent"
   fallback_agent: "ScenicLocationFinder"
-  enable_multi_agent: true
+  enable_multi_agent: false
   max_execution_time_seconds: 30
+
+# LLM Configuration
+llm:
+  default_temperature: 0.7
+  max_tokens: 2000
+  timeout_seconds: 30
+  enable_context_memory: true
+
+# Agent Specific Configuration
+agents:
+  WeatherAgent:
+    temperature: 0.7
+    capabilities:
+      - weather_forecast
+      - climate_analysis
+      - meteorology
+      - weather_planning
+  
+  DiningAgent:
+    temperature: 0.8
+    capabilities:
+      - restaurant_recommendations
+      - cuisine_analysis
+      - dining_planning
+      - food_culture
+  
+  ScenicLocationFinder:
+    temperature: 0.7
+    capabilities:
+      - scenic_location_recommendations
+      - travel_planning
+      - photography_tips
+      - cultural_insights
+  
+  ForestAnalyzer:
+    temperature: 0.6
+    capabilities:
+      - forest_ecosystem_analysis
+      - biodiversity_assessment
+      - conservation_recommendations
+      - wildlife_identification
+  
+  SearchAgent:
+    temperature: 0.8
+    capabilities:
+      - semantic_search
+      - pattern_recognition
+      - similarity_matching
+      - historical_insights
+
+# API Configuration
+api:
+  enable_authentication: false  # Set to true for production
+  rate_limiting: false
+  cors_enabled: true
+  max_request_size_mb: 10
+
+# Logging Configuration
+logging:
+  level: "INFO"
+  log_agent_interactions: true
+  log_memory_operations: true
+  log_search_queries: true
 ```
 
 ## 🎯 Usage
@@ -304,74 +412,208 @@ curl -X POST "http://localhost:8000/run_graph_legacy" \
   -d '{"user": "guest", "question": "Your question here"}'
 ```
 
+### Command-Line Scripts
+
+#### 1. Interactive Demo Script
+Test the system with an interactive query interface:
+```bash
+python scripts/interactive_demo.py
+```
+**Features**:
+- Interactive query input with real-time agent responses
+- Agent routing visualization and response metrics
+- Memory status tracking (STM/LTM entries)
+- Built-in help system with example queries
+- System statistics and usage analytics
+
+#### 2. Server Startup Script
+Start the FastAPI server with custom configuration:
+```bash
+python scripts/run.py
+```
+**Configuration Options**:
+- Customizable host, port, and debug settings
+- Environment variable integration
+- Service dependency checking
+- Comprehensive startup logging
+
+#### 3. Complete System Test
+Run comprehensive system validation and testing:
+```bash
+python scripts/run_complete_system.py
+```
+**Test Coverage**:
+- Direct framework testing with multiple agents
+- Memory system validation (STM/LTM)
+- Database data verification
+- HTTP API endpoint testing
+- Performance metrics and timing
+
+#### 4. Alternative Startup Options
+```bash
+# Start with specific server configuration
+python start_server.py
+
+# Run lightweight main server
+python core/light_main.py
+
+# Interactive user authentication interface
+python user_auth_interface.py
+
+# Query interface (Windows)
+python user_query_interface_win.py
+
+# Query interface (Unix/Linux)
+python user_query_interface.py
+```
+
+### Usage Examples by Agent Type
+
+#### Weather Agent Examples
+```bash
+# Using interactive demo
+python scripts/interactive_demo.py
+# Query: "What's the weather forecast for hiking in the Swiss Alps this weekend?"
+# Query: "Tell me about climate patterns affecting outdoor photography in Norway"
+```
+
+#### Dining Agent Examples
+```bash
+# Query: "Find the best Italian restaurants with outdoor seating in downtown"
+# Query: "Recommend romantic dinner spots with wine pairings for anniversary"
+```
+
+#### Scenic Location Finder Examples
+```bash
+# Query: "Find beautiful mountain photography locations in the Swiss Alps"
+# Query: "Recommend scenic waterfalls in the Pacific Northwest for weekend trips"
+```
+
+#### Forest Analyzer Examples
+```bash
+# Query: "Analyze biodiversity conservation challenges in tropical rainforests"
+# Query: "What are sustainable forestry practices for Canadian boreal forests?"
+```
+
+#### Search Agent Examples
+```bash
+# Query: "Search my conversation history about mountain photography"
+# Query: "Find patterns in my travel-related questions and show connections"
+```
+
 ## 📚 API Documentation
 
 ### Authentication Endpoints
 
 | Method | Endpoint | Description | Authentication |
-|--------|----------|-------------|----------------|
+|--------|----------|-------------|-----------------|
 | POST | `/auth/register` | Register new user | No |
 | POST | `/auth/login` | User login | No |
 | POST | `/auth/logout` | User logout | Yes |
 | GET | `/auth/me` | Get user profile | Yes |
-| GET | `/auth/queries` | Get query history | Yes |
-| GET | `/auth/stats` | Get user statistics | Yes |
+| GET | `/auth/activity` | Get user activity history (with limit param) | Yes |
+| GET | `/auth/queries` | Get user query history (with limit param) | Yes |
+| GET | `/auth/stats` | Get comprehensive user statistics | Yes |
 
 ### Core System Endpoints
 
 | Method | Endpoint | Description | Authentication |
-|--------|----------|-------------|----------------|
-| GET | `/` | Main web interface | No |
+|--------|----------|-------------|-----------------|
+| GET | `/` | Main web interface (HTML) | No |
 | GET | `/health` | System health check | No |
 | GET | `/ping` | Connectivity test | No |
-| GET | `/agents` | List active agents | No |
-| POST | `/run_graph` | Process authenticated query | Yes |
-| POST | `/run_graph_legacy` | Process query (no auth) | No |
-| GET | `/api/ollama/status` | Check LLM status | No |
+| GET | `/agents` | List active agents and graph edges | No |
+| POST | `/register_agents` | Register new agents and edges dynamically | No |
+| POST | `/run_graph` | Process query (optional authentication) | Optional |
+| POST | `/run_graph_legacy` | Legacy query endpoint (no auth) | No |
+| GET | `/api/ollama/status` | Check Ollama status and models | No |
 
 ### Memory Management Endpoints
 
 | Method | Endpoint | Description | Authentication |
-|--------|----------|-------------|----------------|
-| POST | `/set_stm` | Set short-term memory | No |
+|--------|----------|-------------|-----------------|
+| POST | `/set_stm` | Set short-term memory (STMRequest model) | No |
 | GET | `/get_stm/{user_id}/{agent_id}` | Get short-term memory | No |
 | POST | `/memory/ltm/{user_id}/{agent_id}` | Set long-term memory | No |
-| GET | `/memory/ltm/{user_id}/{agent_id}` | Get long-term memory | No |
-| GET | `/search_vector` | Vector similarity search | No |
+| GET | `/memory/ltm/{user_id}/{agent_id}` | Get long-term memory by agent | No |
+| GET | `/search_vector` | Vector similarity search with fallback | No |
 
 ## 🤖 Agent System v2.0
 
 ### Available Agents
 
 #### 1. WeatherAgent 🌦️
-- **Purpose**: Provides comprehensive weather information and forecasts
-- **Capabilities**: Current conditions, weather forecasts, climate analysis, weather-related planning
-- **Keywords**: weather, temperature, rain, sun, climate, forecast, humidity, wind, storm, snow
-- **Example Query**: "What's the weather like in Delhi today?"
+- **Purpose**: Comprehensive weather information, forecasts, and climate analysis specialist
+- **Capabilities**: 
+  - Weather forecasts and current conditions
+  - Climate analysis and seasonal patterns
+  - Weather-related planning advice
+  - Impact assessments for outdoor activities
+  - Travel weather recommendations
+  - Severe weather alerts and safety advice
+  - Meteorological explanations and data interpretation
+- **Keywords**: weather, temperature, rain, sun, climate, forecast, humidity, wind, storm, snow, hot, cold, sunny, cloudy, precipitation, barometric, pressure, degrees
+- **Special Features**: Location context extraction, weather activity planning, multi-type weather analysis (forecast, current, climate, alerts)
+- **Example Query**: "What's the weather forecast for hiking in the mountains this weekend?"
 
 #### 2. DiningAgent 🍽️
-- **Purpose**: Restaurant recommendations and culinary insights
-- **Capabilities**: Restaurant suggestions, cuisine analysis, dining experiences, food culture
-- **Keywords**: restaurant, food, cuisine, dining, eat, meal, chef, menu, cooking, recipe
-- **Example Query**: "Best restaurants in Mumbai for Italian food"
+- **Purpose**: Restaurant recommendations, cuisine analysis, and comprehensive dining experiences
+- **Capabilities**:
+  - Restaurant recommendations and reviews
+  - Cuisine analysis with cultural context
+  - Menu suggestions and dish recommendations
+  - Local food specialties and hidden gems
+  - Dietary accommodations and alternatives
+  - Dining etiquette and cultural customs
+  - Food and wine pairings
+  - Culinary events and food festivals
+  - Chef recommendations and signature dishes
+  - Seasonal menu insights
+- **Keywords**: restaurant, food, cuisine, dining, eat, meal, chef, menu, cooking, recipe, taste, flavor, dish, kitchen, cafe, bistro, eatery, dine, lunch, dinner, breakfast, culinary, gastronomy, delicious, tasty
+- **Special Features**: Multi-agent context integration (weather, location), location hint extraction, cuisine-specific analysis, dining experience categorization
+- **Example Query**: "Best Italian restaurants for a romantic dinner in downtown with outdoor seating?"
 
 #### 3. ScenicLocationFinderAgent 🏔️
-- **Purpose**: Find beautiful scenic locations and tourist destinations
-- **Capabilities**: Location recommendations, travel planning, photography spots, tourism advice
-- **Keywords**: scenic, beautiful, location, tourist, destination, view, landscape, mountain
-- **Example Query**: "Beautiful scenic places near Goa"
+- **Purpose**: Expert recommendations for scenic locations with comprehensive travel information
+- **Capabilities**:
+  - Scenic location recommendations worldwide
+  - Detailed travel planning assistance
+  - Photography tips and best viewpoints
+  - Cultural insights and local significance
+  - Practical travel information (access, timing, costs)
+  - Nearby amenities and accommodation options
+  - Safety considerations and preparation tips
+- **Keywords**: scenic, mountain, landscape, beautiful, view, tourist, visit, travel, place, location, destination, photography, sight, attraction
+- **Special Features**: Historical query matching, recent context integration, specialized location type recommendations, photography guidance
+- **Example Query**: "Find scenic mountain photography locations in the Swiss Alps with cultural significance?"
 
 #### 4. ForestAnalyzerAgent 🌲
-- **Purpose**: Forest ecosystem analysis and conservation
-- **Capabilities**: Forest ecology, biodiversity analysis, conservation advice, wildlife information
-- **Keywords**: forest, tree, wildlife, ecosystem, conservation, nature, biodiversity
-- **Example Query**: "Tell me about the Western Ghats ecosystem"
+- **Purpose**: Scientific forest ecosystem analysis and conservation expertise
+- **Capabilities**:
+  - Forest ecosystem analysis and health assessment
+  - Biodiversity and species composition analysis
+  - Conservation status and threat assessment
+  - Wildlife habitat and corridor analysis
+  - Sustainable forest management practices
+  - Scientific research support and findings
+  - Ecological research insights
+- **Keywords**: forest, tree, woodland, ecosystem, biodiversity, conservation, wildlife, nature, jungle, rainforest, deforestation, species, habitat, flora, fauna
+- **Special Features**: Scientific accuracy focus, research-based responses, forest health analysis, conservation assessment, pattern detection across analysis types
+- **Example Query**: "Analyze the biodiversity conservation challenges in tropical rainforest ecosystems?"
 
 #### 5. SearchAgent 🔍
-- **Purpose**: Memory and conversation history search
-- **Capabilities**: Similarity search, pattern recognition, history analysis, contextual insights
-- **Keywords**: search, history, remember, previous, similar, past, recall
-- **Example Query**: "Find previous conversations about travel"
+- **Purpose**: Advanced semantic search and pattern analysis across all user interactions
+- **Capabilities**:
+  - Semantic search using vector embeddings
+  - Pattern recognition in historical data
+  - Similarity matching across all agents
+  - Content analysis and summarization
+  - Trend identification over time
+  - Cross-agent search capabilities
+  - Historical insights and connections
+- **Keywords**: search, history, previous, before, recall, remember, similar, past, find, lookup, pattern, trend
+- **Special Features**: Cross-agent search, vector-based similarity, pattern analysis, comprehensive historical search (STM + LTM), relevance scoring
+- **Example Query**: "Find similar conversations about mountain travel and show me the patterns in my interests?"
 
 ### Agent Architecture
 
@@ -428,34 +670,89 @@ python_new-main/
 │   ├── __init__.py
 │   └── main.py            # Main API server
 ├── agents/                # Individual agent implementations
+│   ├── __init__.py
+│   ├── agent_template.py
+│   ├── dining_agent.py
 │   ├── forest_analyzer.py
 │   ├── scenic_location_finder.py
 │   ├── search_agent.py
-│   └── water_body_analyzer.py
+│   └── weather_agent.py
 ├── auth/                  # Authentication system
+│   ├── __init__.py
 │   ├── auth_endpoints.py  # Auth API routes
 │   ├── auth_service.py    # Auth business logic
 │   ├── models.py          # User data models
+│   ├── router.py          # Auth router
 │   └── utils.py           # Auth utilities
 ├── core/                  # Core system components
-│   ├── agents/            # Agent implementations
+│   ├── __init__.py
+│   ├── agents/            # Core agent implementations
+│   │   ├── forest_analyzer_agent.py
+│   │   ├── orchestrator_agent.py
+│   │   ├── scenic_location_finder_agent.py
+│   │   └── search_agent.py
+│   ├── agent_registry.py  # Agent registration system
 │   ├── base_agent.py      # Base agent class
-│   ├── langgraph_framework.py  # LangGraph integration
+│   ├── config_loader.py   # Configuration loader
+│   ├── dynamic_agents.py  # Dynamic agent management
+│   ├── langgraph_framework.py      # LangGraph integration
+│   ├── langgraph_multiagent_system.py  # Multi-agent system
+│   ├── light_main.py      # Lightweight main runner
+│   ├── location_extractor.py  # Location extraction utilities
 │   ├── memory.py          # Memory management
+│   ├── mock_ollama_client.py   # Mock LLM client for testing
 │   ├── ollama_client.py   # LLM client
-│   └── orchestrator.py    # Agent orchestration
+│   ├── orchestrator.py    # Agent orchestration
+│   ├── registry.py        # Agent registry
+│   └── vector_store.py    # Vector storage system
 ├── database/              # Database connections
+│   ├── __init__.py
 │   └── connection.py      # MySQL connection manager
+├── scripts/               # Utility scripts
+│   ├── interactive_demo.py
+│   ├── run.py
+│   ├── run_complete_system.py
+│   └── simple_ollama_client.py
 ├── static/                # Web interface assets
 │   ├── css/
 │   └── js/
-├── templates/             # HTML templates
+├── templates/             # HTML templates and agent templates
+│   ├── create_agent.py
+│   ├── sample_agent_template.py
+│   ├── weather_agent_example.py
 │   └── index.html         # Main UI template
+├── tests/                 # Test suites
+│   ├── __init__.py
+│   ├── test_ai_system.py
+│   ├── test_auth_system.py
+│   ├── test_complete_system.py
+│   ├── test_direct_framework.py
+│   ├── test_enhanced_system.py
+│   ├── test_full_system.py
+│   ├── test_langgraph_framework.py
+│   ├── test_memory.py
+│   ├── test_multi_agent.py
+│   ├── test_ollama.py
+│   ├── test_orchestration.py
+│   ├── test_search_agent.py
+│   ├── test_server_and_framework.py
+│   └── test_ui_responses.py
 ├── config/                # Configuration files
 │   └── agent_config.yml   # Agent configuration
 ├── docs/                  # Documentation
-├── tests/                 # Test suites
+├── comprehensive_multiagent_test.py  # Comprehensive system test
 ├── config.py              # Application configuration
+├── final_test.py          # Final system test
+├── simple_test.py         # Simple system test
+├── start_server.py        # Server startup script
+├── test_framework.py      # Framework testing
+├── test_multiagent_system.py  # Multi-agent system tests
+├── test_null_safety_fixes.py  # Null safety testing
+├── test_web_interface.py  # Web interface tests
+├── upgrade_database_schema.py  # Database schema upgrade
+├── user_auth_interface.py # User authentication interface
+├── user_query_interface.py    # User query interface (Unix)
+├── user_query_interface_win.py # User query interface (Windows)
 └── requirements.txt       # Python dependencies
 ```
 
@@ -488,43 +785,156 @@ class YourAgent(BaseAgent):
 
 ## 🧪 Testing
 
-### Run All Tests
+### Prerequisites
+Install testing dependencies:
 ```bash
-# Comprehensive framework test
+pip install pytest pytest-asyncio coverage
+```
+
+### Available Test Suites
+
+#### Framework & System Tests
+```bash
+# Comprehensive multi-agent system test
+python comprehensive_multiagent_test.py
+
+# Main framework testing
 python test_framework.py
 
-# Multi-agent system test
+# Multi-agent system integration test
 python test_multiagent_system.py
 
-# Null safety and error handling test
+# Null safety and error handling validation
 python test_null_safety_fixes.py
 
-# Authentication interface test
+# Final system validation test
+python final_test.py
+
+# Simple system smoke test
+python simple_test.py
+
+# Web interface testing
+python test_web_interface.py
+```
+
+#### Interactive Interfaces
+```bash
+# User authentication interface (interactive)
 python user_auth_interface.py
 
-# Simple test
+# Query interface for Unix/Linux systems
+python user_query_interface.py
+
+# Query interface for Windows systems
+python user_query_interface_win.py
+```
+
+#### Component-Specific Tests (pytest)
+```bash
+# Test complete system integration
+python -m pytest tests/test_complete_system.py
+
+# Test AI system components
+python -m pytest tests/test_ai_system.py
+
+# Test authentication system
+python -m pytest tests/test_auth_system.py
+
+# Test memory management
+python -m pytest tests/test_memory.py
+
+# Test agent orchestration
+python -m pytest tests/test_orchestration.py
+
+# Test search agent functionality
+python -m pytest tests/test_search_agent.py
+
+# Test LangGraph framework
+python -m pytest tests/test_langgraph_framework.py
+
+# Test Ollama client integration
+python -m pytest tests/test_ollama.py
+
+# Test multi-agent interactions
+python -m pytest tests/test_multi_agent.py
+
+# Test enhanced system features
+python -m pytest tests/test_enhanced_system.py
+
+# Test full system functionality
+python -m pytest tests/test_full_system.py
+
+# Test direct framework access
+python -m pytest tests/test_direct_framework.py
+
+# Test server and framework integration
+python -m pytest tests/test_server_and_framework.py
+
+# Test UI response handling
+python -m pytest tests/test_ui_responses.py
+```
+
+### Run All Tests at Once
+```bash
+# Run all pytest-based tests
+python -m pytest tests/ -v
+
+# Run all system validation tests
+python test_framework.py && python test_multiagent_system.py && python comprehensive_multiagent_test.py
+
+# Quick smoke test
 python simple_test.py
 ```
 
-### Test Individual Components
+### Test Coverage Analysis
 ```bash
-# Test memory system
-python -m pytest tests/test_memory.py
+# Install coverage tools
+pip install coverage pytest-cov
 
-# Test authentication
-python -m pytest tests/test_auth_system.py
+# Generate comprehensive coverage report
+coverage run -m pytest tests/
+coverage report --show-missing
 
-# Test agents
-python -m pytest tests/test_orchestration.py
+# Generate HTML coverage report
+coverage html
+# View report: open htmlcov/index.html
+
+# Run tests with inline coverage
+python -m pytest tests/ --cov=. --cov-report=term-missing
 ```
 
-### Test Coverage
+### Debugging Tests
 ```bash
-# Generate coverage report
-pip install coverage
-coverage run -m pytest tests/
-coverage report
-coverage html  # Creates htmlcov/ directory
+# Run tests with verbose output
+python -m pytest tests/ -v -s
+
+# Run specific test with debugging
+python -m pytest tests/test_memory.py::test_specific_function -v -s
+
+# Run tests with pdb debugging
+python -m pytest tests/ --pdb
+```
+
+### Performance Testing
+```bash
+# Test system performance under load
+python test_framework.py --performance
+
+# Test multi-agent response times
+python comprehensive_multiagent_test.py --timing
+```
+
+### Integration Testing
+```bash
+# Test complete system with real services
+# Ensure Redis, MySQL, and Ollama are running
+python test_complete_system.py
+
+# Test authentication flow
+python tests/test_auth_system.py
+
+# Test memory persistence
+python tests/test_memory.py
 ```
 
 ## 🚀 Deployment
